@@ -3,8 +3,13 @@
 #include <d3d10.h>
 #include <dxgi.h>
 #pragma comment(lib, "dxgi.lib")
+#ifndef _M_X64
+#pragma comment(lib, "C:/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Lib/x86/d3d10.lib")
+#pragma comment(lib, "C:/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Lib/x86/d3dx10.lib")
+#else
 #pragma comment(lib, "C:/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Lib/x64/d3d10.lib")
 #pragma comment(lib, "C:/Program Files (x86)/Microsoft DirectX SDK (June 2010)/Lib/x64/d3dx10.lib")
+#endif // !_M_X64
 
 enum SwapChainIndex
 {
@@ -135,8 +140,8 @@ public:
 	~D3D10HOOK();
 	void SetSwapChainHook(void* Func, SwapChainIndex index);
 	void SetDeviceHook(void* Func, DeviceIndex index);
-	long long GetOriginDeviceFunc(DeviceIndex index);
-	long long GetOriginSwapChainFunc(SwapChainIndex index);
+	void* GetOriginDeviceFunc(DeviceIndex index);
+	void* GetOriginSwapChainFunc(SwapChainIndex index);
 	bool GetHookStatus();
 
 private:
@@ -145,6 +150,6 @@ private:
 	void** SwapChainVtable;
 	void** DeviceVtable;
 	bool initializedHook = false;
-	unsigned long long oSwapChainFunc[17];
-	unsigned long long oDeviceFunc[97];
+	void* oSwapChainFunc[17];
+	void* oDeviceFunc[97];
 };

@@ -23,9 +23,9 @@ D3D10HOOK::D3D10HOOK(HWND hWnd) {
 		UINT createDeviceFlags = 0;
 		createDeviceFlags |= D3D10_CREATE_DEVICE_DEBUG;
 		if (D3D10CreateDeviceAndSwapChain(NULL, D3D10_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, D3D10_SDK_VERSION, &sd, &pSwapChain, &pDevice) == S_OK) {
-			SwapChainVtable = *(void***)pSwapChain;
 
-			DeviceVtable = *(void***)pDevice;
+			SwapChainVtable = *reinterpret_cast<void***>(pSwapChain);
+			DeviceVtable = *reinterpret_cast<void***>(pDevice);
 
 			for (unsigned char i = 0; i <= 97; i++)
 				oDeviceFunc[i] = 0;
@@ -40,11 +40,11 @@ D3D10HOOK::D3D10HOOK(HWND hWnd) {
 D3D10HOOK::~D3D10HOOK() {
 	for (unsigned char i = 0; i <= 97; i++) {
 		if (oDeviceFunc[i] != 0)
-			DeviceVtable[i] = (void*)oDeviceFunc[i];
+			DeviceVtable[i] = oDeviceFunc[i];
 	}
 	for (unsigned char i = 0; i <= 17; i++) {
 		if (oSwapChainFunc[i] != 0)
-			SwapChainVtable[i] = (void*)oSwapChainFunc[i];
+			SwapChainVtable[i] = oSwapChainFunc[i];
 	}
 	pDevice->Release();
 	pSwapChain->Release();
@@ -53,28 +53,28 @@ D3D10HOOK::~D3D10HOOK() {
 void D3D10HOOK::SetSwapChainHook(void* Func, SwapChainIndex index) {
 	if (oSwapChainFunc[index] == 0) {
 		DWORD oldProtection;
-		VirtualProtect(&SwapChainVtable[index], 4, PAGE_EXECUTE_READWRITE, &oldProtection);
-		oSwapChainFunc[index] = (unsigned long long)SwapChainVtable[index];
+		VirtualProtect(&SwapChainVtable[index], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProtection);
+		oSwapChainFunc[index] = SwapChainVtable[index];
 		SwapChainVtable[index] = Func;
-		VirtualProtect(&SwapChainVtable[index], 4, oldProtection, NULL);
+		VirtualProtect(&SwapChainVtable[index], sizeof(void*), oldProtection, NULL);
 	}
 }
 
 void D3D10HOOK::SetDeviceHook(void* Func, DeviceIndex index) {
 	if (oDeviceFunc[index] == 0) {
-		unsigned long oldProt;
-		VirtualProtect((void*)&DeviceVtable[index], 4, PAGE_EXECUTE_READWRITE, &oldProt);
-		oDeviceFunc[index] = (unsigned long long)DeviceVtable[index];
+		DWORD oldProt;
+		VirtualProtect(&DeviceVtable[index], sizeof(void*), PAGE_EXECUTE_READWRITE, &oldProt);
+		oDeviceFunc[index] = DeviceVtable[index];
 		DeviceVtable[index] = Func;
-		VirtualProtect((void*)&DeviceVtable[index], 4, oldProt, NULL);
+		VirtualProtect(&DeviceVtable[index], sizeof(void*), oldProt, NULL);
 	}
 }
 
-long long D3D10HOOK::GetOriginDeviceFunc(DeviceIndex index) {
+void* D3D10HOOK::GetOriginDeviceFunc(DeviceIndex index) {
 	return oDeviceFunc[index];
 }
 
-long long D3D10HOOK::GetOriginSwapChainFunc(SwapChainIndex index) {
+void* D3D10HOOK::GetOriginSwapChainFunc(SwapChainIndex index) {
 	return oSwapChainFunc[index];
 }
 
